@@ -26,7 +26,7 @@ FONTE_PONTOS = pygame.font.SysFont('comicsansms', 50)
 class Passaro:
     IMAGENS = IMAGENS_PASSARO #usando como cte dentro da variavel
      ##### animações das rotações:
-    ROTACAO_MAXIMA = 25
+    ROTACAO_MAXIMA = 15 #angulo max. do passaro
     VELOCIDADE_ROTACAO = 20
     TEMPO_ANIMACAO = 5
 ### atributos do passaro:
@@ -36,13 +36,13 @@ class Passaro:
         self.angulo = 0
         self.velocidade = 0 #velocidade p cima e p baixo
         self.altura = self.y
-        self.tempo = 0 #para o movimento do passaro ser parabólico (sorvete)
+        self.tempo = 0 #para o movimento do passaro ser parabólico (sorvete), criar a animação
         self.contagem_imagem = 0
         self.imagem = self.IMAGENS[0]
 
     def pular(self): #o passaro desloca apenas no eixo y
         self.velocidade = -10.5 #negativo, pois no pygame, a direção para cima é negativo
-        self.tempo = 0
+        self.tempo = 0 
         self.altura = self.y #só tualizo a altura quando ele pular
 
     def mover(self):
@@ -53,10 +53,12 @@ class Passaro:
         ### restrição do deslocamento para ele não acelerar infinitamente p baixou ou p cima
         if deslocamento > 16: #deslocamento máximo será de 16px
             deslocamento = 16
-        elif deslocamento < 0:
-            deslocamento -= 2
+        self.y += deslocamento #pego a posição em y e somo com o deslocamento (de fato desloco ele)
 
-        self.y += deslocamento
+        if deslocamento <0 or self.y < (self.altura + 50): #se estiver deslocando p cima ou se a posição y estiver abaixo da altura (que só é atualizada quando ele pula)
+            if self.angulo < self.ROTACAO_MAXIMA: #se ele não estiver virado p cima
+                self.angulo = self.ROTACAO_MAXIMA #deixo ele virado p cima
+            
 
 
     def desenhar(self, tela):
@@ -71,7 +73,7 @@ class Passaro:
             self.imagem = self.IMAGENS[2]
         elif self.contagem_imagem < self.TEMPO_ANIMACAO*4:
             self.imagem = self.IMAGENS[1]
-        elif self.contagem_imagem >= self.TEMPO_ANIMACAO*4 + 1:
+        elif self.contagem_imagem >= self.TEMPO_ANIMACAO*4 + 1 :
             self.imagem = self.IMAGENS[0]
             self.contagem_imagem = 0
 
@@ -81,10 +83,10 @@ class Passaro:
             self.imagem = self.IMAGENS[1]
             self.contagem_imagem = self.TEMPO_ANIMACAO*2
 
-        # desenhar a imagem
+        # desenhar a imagem (código padrão)
         imagem_rotacionada = pygame.transform.rotate(self.imagem, self.angulo)
         centro_imagem = self.imagem.get_rect(topleft=(self.x, self.y)).center
-        retangulo = imagem_rotacionada.get_rect(center=centro_imagem)
+        retangulo = imagem_rotacionada.get_rect(center=centro_imagem) #pega a imagem e desenha um retangulo na rela, dps pega o retangulo e coloca na tela
         tela.blit(imagem_rotacionada, retangulo.topleft)
 
     def get_mask(self):
@@ -100,7 +102,7 @@ class Cano:
         self.altura = 0
         self.pos_cano_cima = 0
         self.pos_cano_baixo = 0
-        self.CANO_TOPO = pygame.transform.flip(IMAGEM_CANO, False, True)
+        self.CANO_TOPO = pygame.transform.flip(IMAGEM_CANO, False, True) #é a imagem do cano invertida (flipada), no eixo y (true)
         self.CANO_BASE = IMAGEM_CANO
         self.passou = False
         self.definir_altura()
@@ -224,27 +226,23 @@ def main():
                 if evento.key == pygame.K_r and game_over:
                     reiniciar_jogo()
 
-                if evento.key == pygame.K_RETURN:
+                if evento.key == pygame.K_RETURN: #tecla enter
                     if not iniciado:
                         iniciado = True
                         reiniciar_jogo()
+                        
         if not iniciado:  # Verifica se o jogo não foi iniciado
             tela.blit(IMAGEM_INICIO, (0, 0))
             texto_iniciar = pygame.font.SysFont('comicsansms', 30).render("Pressione 'enter' para iniciar ^-^", 1, (0, 0, 0))
             tela.blit(texto_iniciar, ((LARGURA - texto_iniciar.get_width()) // 2, (ALTURA - texto_iniciar.get_height()) // 2))
             pygame.display.update()
             continue
-#################fazer evento para o chaoor chao.colidir(passaro)
+
 
         ##mover as coisas do jogo
         for passaro in passaros:
             passaro.mover()
         chao.mover()
-        
-        #if chao.colidir(passaro):
-            #game_over = True
-           # break
-
         adicionar_cano = False
         remover_canos = []
         for cano in canos:
@@ -254,8 +252,6 @@ def main():
                     game_over = True
                     break
             cano.mover()
-
-
             if not cano.passou and passaro.x > cano.x:
                 cano.passou = True
                 adicionar_cano = True
@@ -270,18 +266,16 @@ def main():
 
 
 
-        if game_over:
-            exibir_game_over(tela)
-            pygame.display.update( )
-            pygame.time.delay(500)
-
         if adicionar_cano:
             pontos += 1
             canos.append(Cano(600))
         
         for cano in remover_canos:
             canos.remove(cano)
-
+        if game_over:
+            exibir_game_over(tela)
+            pygame.display.update( )
+            continue
 
 
         desenhar_tela(tela, passaros, canos, chao, pontos)
@@ -289,3 +283,4 @@ def main():
     
 
 main()
+
